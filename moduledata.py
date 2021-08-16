@@ -219,6 +219,8 @@ class ModuleData():
         idc.set_name(self.funcnametab, "funcnametab")
 
         self.cutab = idc.get_qword(next_base_addr + ADDR_SZ * 3 * 1)
+        self.cutab_num = idc.get_qword(next_base_addr + ADDR_SZ * 3 * 1 + ADDR_SZ)
+        self.cutab_cap = idc.get_qword(next_base_addr + ADDR_SZ * 3 * 1 + ADDR_SZ * 2)
         # ida_bytes.create_qword(next_base_addr + ADDR_SZ * 3 * 1, 8 * 3, True)
         # idc.set_cmt(next_base_addr + ADDR_SZ * 3 * 1, "cutab", False)
         # idc.set_name(self.cutab, "cutab")

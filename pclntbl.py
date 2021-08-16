@@ -39,6 +39,7 @@ class Pclntbl():
         self.goroot = ""
         self.mod_data = related_mod_data
         self.func_struct = []
+        self.src_file_path_dic = []
 
     def parse_hdr(self):
         self.pcHeader_addr = self.start_addr
@@ -78,14 +79,35 @@ class Pclntbl():
             self.func_struct.append(func_struct)
         self.parsed_funcs = True
 
+    def parse_cutab_and_filetab(self):
+        common._debug(f"parse all file path in executables!")
+        for i in range(0, self.mod_data.cutab_num, 4):
+            str_addr = idc.get_wide_dword(self.mod_data.cutab + i)
+            if str_addr == 0xFFFFFFFF:
+                continue
+            str_addr_len = ida_bytes.get_max_strlit_length(str_addr, ida_nalt.STRTYPE_C)
+            str_of_file = ida_bytes.get_strlit_contents(str_addr, str_addr_len, ida_nalt.STRTYPE_C)
+            common._debug(f"{str_of_file}")
+            self.src_file_path_dic.append((str_addr, str_addr_len, self.mod_data.cutab + i))
+        self.parsed_source_file_path = True
+
     def parse(self):
         self.parse_hdr()
         self.parse_funcs()
+        self.parse_cutab_and_filetab()
     
     def eraser(self):
+        assert self.parsed_funcs == True
         for item in self.func_struct:
             ida_bytes.patch_bytes(item.name_addr, b"\x00" * item.name_lenth)
-        common._debug(f"erase all function names!")
+            ida_bytes.patch_dword(item.start_addr + ADDR_SZ + 4 * 7, 0x0)
+        common._debug(f"erase all function names and cuOffset!")
+
+        assert self.parsed_source_file_path == True
+        for str_addr, str_len, str_p_addr in self.src_file_path_dic:
+            ida_bytes.patch_bytes(str_addr, b"\x00" * str_len)
+            ida_bytes.patch_dword(str_p_addr, 0x0)
+        common._debug(f"erase all src path str")
 
 class FuncStruct():
     '''
