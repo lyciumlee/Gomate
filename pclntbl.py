@@ -85,6 +85,7 @@ class Pclntbl():
             str_addr = idc.get_wide_dword(self.mod_data.cutab + i)
             if str_addr == 0xFFFFFFFF:
                 continue
+            str_addr += self.mod_data.filetab_addr
             str_addr_len = ida_bytes.get_max_strlit_length(str_addr, ida_nalt.STRTYPE_C)
             str_of_file = ida_bytes.get_strlit_contents(str_addr, str_addr_len, ida_nalt.STRTYPE_C)
             common._debug(f"{str_of_file}")

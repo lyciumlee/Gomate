@@ -5,16 +5,18 @@
 IDA plugin for Golang 1.16 executable eraser
 """
 
+from go_parser import DEBUG
 from pclntbl import Pclntbl
 
 import ida_bytes
-import wingdbstub
 import sys
 import common
 import idaapi
 import types_builder
-
-wingdbstub.Ensure()
+DEBUG = False
+if DEBUG:
+    import wingdbstub
+    wingdbstub.Ensure()
 sys.setrecursionlimit(100000)
 idaapi.require("moduledata")
 idaapi.require("common")

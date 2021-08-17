@@ -49,13 +49,14 @@ class TypesParser():
                     continue
                 self.parse_type(type_addr=type_addr)
             except:
-                print("error! ", sys.exc_info()[0])
+                common._debug(sys.exc_info()[0])
                 pass
         common._info("types building finished. Total types number: %d" % len(self.parsed_types.keys()))
         global type_name_str
         self.types_str_info = type_name_str[:]
         del type_name_str
         common._info(f"{len(self.types_str_info)}")
+        self.depth = 0
         # print(self.types_str_info)
 
 
