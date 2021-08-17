@@ -5,16 +5,18 @@
 IDA plugin for Golang 1.16 executable parser
 """
 
+from ida_typeinf import FAH_BYTE
 from pclntbl import Pclntbl
-
 import ida_bytes
-import wingdbstub
 import sys
 import common
 import idaapi
 import types_builder
 
-wingdbstub.Ensure()
+DEBUG = False
+if DEBUG:
+    import wingdbstub
+    wingdbstub.Ensure()
 sys.setrecursionlimit(100000)
 idaapi.require("moduledata")
 idaapi.require("common")
@@ -23,6 +25,7 @@ idaapi.require("pclntbl")
 from moduledata import ModuleData
 import moduledata
 import types_builder
+import itab
 
 def main():
     firstmoddata_addr = moduledata.find_first_moduledata_addr()
@@ -34,6 +37,7 @@ def main():
     common._debug("begin erase function name")
     type_parser = types_builder.TypesParser(first_mod)
     type_parser.build_all_types()
+    itab.parse_itab(first_mod, type_parser)
 
 
 
