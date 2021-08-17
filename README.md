@@ -12,9 +12,14 @@ Just download all files to Your Computer.
 
 ## Usage / 使用
 Use IDA to analyse aim Go executables. When IDA is idle, just click  the "script file" menu. And select the go_eraser.py.
-先使用 IDA 分析目标 Go 程序。当 IDA 分析完毕， 使用 IDA 菜单中的脚本文件功能，选择 go_eraser.py.
+先使用 IDA 分析目标 Go 程序。当 IDA 分析完毕， 使用 IDA 菜单中的脚本文件功能，选择 go_parser.py.
+
+If you want to erase all trival data structure for runtime, You can select the go_eraser.py
+如果你想把所有对运行无影响的数据结构擦除，你需要选择 go_eraser.py
 
 ## Info / 提示
-Some Python Class of this tools can execute "eraser" function which is used to erase some trival data structures to promote difficulty of reverse engineer. If you just want to analyse Go executables, you should delete all invocations of "eraser()" in go_eraser.py.
+have fun！
 
-工具中一些 Python 类提供了 "eraser" 方法，方法默认将在 go_eraser.py 调用用以删除对于运行来说不重要的数据结构来提升逆向难度。如果你不想要擦除这些数据结构，你需要删除 go_eraser.py 中所有有关 eraser的调用。
+parse 效果
+![](./pics/1.png)
+![](./pics/2.png)

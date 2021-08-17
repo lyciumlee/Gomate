@@ -11,6 +11,9 @@ import sys
 sys.setrecursionlimit(100000)
 
 
+type_name_str = []
+
+
 class TypesParser():
     '''
     Parse and construct all the types
@@ -49,6 +52,12 @@ class TypesParser():
                 print("error! ", sys.exc_info()[0])
                 pass
         common._info("types building finished. Total types number: %d" % len(self.parsed_types.keys()))
+        global type_name_str
+        self.types_str_info = type_name_str[:]
+        del type_name_str
+        common._info(f"{len(self.types_str_info)}")
+        # print(self.types_str_info)
+
 
     def parse_type(self, type_addr=idc.BADADDR, depth=1):
         self.depth += 1
@@ -126,6 +135,19 @@ class TypesParser():
 
     def has_been_parsed(self, addr):
         return (addr in self.parsed_types.keys())
+    
+    def eraser(self):
+        cnt = 0
+        for str_addr, str_len in self.types_str_info:
+            # common._debug(f"{cnt}")
+            cnt += 1
+            try:
+                ida_bytes.patch_bytes(str_addr, str_len * b"\x00")
+                ida_auto.auto_wait()
+            except:
+                print(f"strange addr {hex(str_addr)}!")
+        common._debug(f"remove {len(self.types_str_info)} strs!")
+
 
 
 
@@ -360,6 +382,8 @@ class Name():
         self.pkg_len = 0
         self.tag = ""
         self.tag_len = 0
+        self.name_str_addr = 0
+        self.tag_addr = 0
 
     def parse(self, has_star_prefix):
         flag_byte = idc.get_wide_byte(self.addr)
@@ -373,6 +397,10 @@ class Name():
         idc.create_byte(self.addr + 2)
         self.orig_name_str = str(idc.get_bytes(self.addr + 3, self.len))
         idc.create_strlit(self.addr + 3, self.addr + 3 + self.len)
+        self.name_str_addr = self.addr + 3
+        self.name_str_len = self.len
+        global type_name_str
+        type_name_str.append((self.name_str_addr, self.name_str_len))
         self.name_str = self.orig_name_str
         # delete star_prefix:
         while True:
@@ -388,6 +416,9 @@ class Name():
             idc.create_byte(self.addr + 3 + self.len + 1)
             self.tag = str(idc.get_bytes(self.addr + 3 + self.len + 2, self.tag_len))
             idc.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
+            self.tag_addr = self.addr + 3 + self.len + 2
+            self.tag_len = self.tag_len
+            type_name_str.append((self.tag_addr, self.tag_len))
 
         # if name was reased, the replace name string with tag string
         if (not self.name_str or len(self.name_str) == 0) and self.tag and self.tag_len > 0:

@@ -8,12 +8,13 @@ IDA plugin for Golang 1.16 executable eraser
 from pclntbl import Pclntbl
 
 import ida_bytes
-
+import wingdbstub
 import sys
 import common
 import idaapi
 import types_builder
 
+wingdbstub.Ensure()
 sys.setrecursionlimit(100000)
 idaapi.require("moduledata")
 idaapi.require("common")
@@ -34,6 +35,7 @@ def main():
     first_pclntab.eraser()
     type_parser = types_builder.TypesParser(first_mod)
     type_parser.build_all_types()
+    type_parser.eraser()
 
 
 

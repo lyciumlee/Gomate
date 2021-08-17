@@ -2,19 +2,19 @@
 # -*- coding: UTF-8 -*-
 
 """
-IDA plugin for Golang 1.16 executable eraser
+IDA plugin for Golang 1.16 executable parser
 """
 
 from pclntbl import Pclntbl
 
 import ida_bytes
-
+import wingdbstub
 import sys
 import common
 import idaapi
 import types_builder
 
-
+wingdbstub.Ensure()
 sys.setrecursionlimit(100000)
 idaapi.require("moduledata")
 idaapi.require("common")
