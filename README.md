@@ -21,5 +21,5 @@ If you want to erase all trival data structure for runtime, You can select the g
 have fun！
 
 parse 效果
-![](./pics/1.png)
-![](./pics/2.png)
+![](./pics/1.PNG)
+![](./pics/2.PNG)
