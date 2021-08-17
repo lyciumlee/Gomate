@@ -14,6 +14,7 @@ import common
 import idaapi
 import types_builder
 
+
 sys.setrecursionlimit(100000)
 idaapi.require("moduledata")
 idaapi.require("common")
@@ -31,7 +32,6 @@ def main():
     first_pclntab = Pclntbl(first_mod.pcHeader.pcHeader_addr, first_mod)
     first_pclntab.parse()
     common._debug("begin erase function name")
-    first_pclntab.eraser()
     type_parser = types_builder.TypesParser(first_mod)
     type_parser.build_all_types()
 
