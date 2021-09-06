@@ -63,6 +63,7 @@ class TypesParser():
     def parse_type(self, type_addr=idc.BADADDR, depth=1):
         self.depth += 1
         if type_addr == 0 or type_addr == idc.BADADDR or self.depth > 2:
+            self.depth = 0
             return None
 
         if type_addr in self.parsed_types.keys():

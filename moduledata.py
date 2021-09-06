@@ -53,7 +53,7 @@ def find_first_moduledata_addr_by_brute():
         curr_seg = ida_segment.getnseg(idx)
         curr_addr = curr_seg.start_ea
         while curr_addr <= curr_seg.end_ea:
-            if idc.get_wide_dword(idc.get_wide_dword(curr_addr)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
+            if idc.get_wide_dword(idc.get_qword(curr_addr)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
                 if test_firstmoduledata(curr_addr):
                     break
             curr_addr += ADDR_SZ
@@ -85,7 +85,7 @@ def find_first_moduledata_addr():
 
         curr_addr = mdata_seg.start_ea
         while curr_addr <= mdata_seg.end_ea:
-            if idc.get_wide_dword(idc.get_wide_dword(curr_addr)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
+            if idc.get_wide_dword(idc.get_qword(curr_addr)) & 0xFFFFFFFF == magic_num: # possible firstmoduledata
                 if test_firstmoduledata(curr_addr):
                     break
             curr_addr += ADDR_SZ

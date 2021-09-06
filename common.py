@@ -3,7 +3,7 @@
 import idc, idaapi, idautils
 import string
 
-DEBUG = False
+DEBUG = True
 ADDR_SZ = 8 # Default: 32-bit
 GOVER = ""
 

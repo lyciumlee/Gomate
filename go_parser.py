@@ -13,7 +13,7 @@ import common
 import idaapi
 import types_builder
 
-DEBUG = False
+DEBUG = True
 if DEBUG:
     import wingdbstub
     wingdbstub.Ensure()
@@ -35,9 +35,9 @@ def main():
     first_pclntab = Pclntbl(first_mod.pcHeader.pcHeader_addr, first_mod)
     first_pclntab.parse()
     common._debug("begin erase function name")
-    type_parser = types_builder.TypesParser(first_mod)
-    type_parser.build_all_types()
-    itab.parse_itab(first_mod, type_parser)
+    # type_parser = types_builder.TypesParser(first_mod)
+    # type_parser.build_all_types()
+    # itab.parse_itab(first_mod, type_parser)
 
 
 

@@ -6,7 +6,7 @@ idaapi.require("moduledata")
 from common import ADDR_SZ
 import common
 from moduledata import ModuleData
-import ida_nalt
+import ida_nalt, ida_auto, ida_funcs
 
 class Pclntbl():
     '''
@@ -76,6 +76,15 @@ class Pclntbl():
             func_struct = FuncStruct(func_struct_addr)
             func_struct.parse(self.funcname_addr)
             common._debug(f"find {hex(func_addr)} name is {func_struct.name}")
+            if not idc.get_func_name(func_addr):
+                common._debug("create function @ %x" % func_addr)
+                ida_bytes.del_items(func_addr, ida_bytes.DELIT_EXPAND)
+                ida_auto.auto_wait()
+                idc.create_insn(func_addr)
+                ida_auto.auto_wait()
+                if ida_funcs.add_func(func_addr):
+                    ida_auto.auto_wait()
+            idc.set_name(func_addr, func_struct.name.decode("iso8859"), idc.SN_NOWARN)
             self.func_struct.append(func_struct)
         self.parsed_funcs = True
 
@@ -155,6 +164,8 @@ class FuncStruct():
             self.name_addr = func_name_addr + self.nameoff
             self.name_lenth = ida_bytes.get_max_strlit_length(self.name_addr, ida_nalt.STRTYPE_C)
             self.name = ida_bytes.get_strlit_contents(self.name_addr, self.name_lenth, ida_nalt.STRTYPE_C)
+            if b"/" in self.name:
+                self.name = self.name.replace(b"/", b"_").replace(b".", b"_")
 
 # Function pointers are often used instead of passing a direct address to the
 # function -- this function names them based off what they're currently named
