@@ -164,8 +164,8 @@ class FuncStruct():
             self.name_addr = func_name_addr + self.nameoff
             self.name_lenth = ida_bytes.get_max_strlit_length(self.name_addr, ida_nalt.STRTYPE_C)
             self.name = ida_bytes.get_strlit_contents(self.name_addr, self.name_lenth, ida_nalt.STRTYPE_C)
-            if b"/" in self.name:
-                self.name = self.name.replace(b"/", b"_").replace(b".", b"_")
+            if self.name:
+                self.name = self.name.replace(b"/", b"_").replace(b".", b"_").replace(b"(", b"_").replace(b")", b"_").replace(b"*", b"_").replace(b"-", b"_")
 
 # Function pointers are often used instead of passing a direct address to the
 # function -- this function names them based off what they're currently named

@@ -8,11 +8,13 @@ import common
 from common import ADDR_SZ
 
 import sys
-sys.setrecursionlimit(100000)
+sys.setrecursionlimit(1000000)
 
 
-type_name_str = []
+log_file_this = open("C:\\Users\\lll\\Desktop\\log.txt", "w")
 
+
+cache_parse_types = []
 
 class TypesParser():
     '''
@@ -25,6 +27,7 @@ class TypesParser():
         self.moddata = firstmoduledata
         self.parsed_types = dict()
         self.itabs = list()
+        self.depth = 0
 
     def is_raw_type(self, kind):
         return kind in self.RAW_TYPES
@@ -32,6 +35,8 @@ class TypesParser():
     def build_all_types(self, depth=1):
         common._info("Building all types...")
         # self.moddata.typelink_len
+        log_file_this.write("type link len is %d \n" % self.moddata.typelink_len)
+        log_file_this.flush()
         for idx in range(self.moddata.typelink_len):
             try:
                 self.depth = 0
@@ -47,25 +52,19 @@ class TypesParser():
                 if type_addr in self.parsed_types.keys():
                     common._debug("  " * depth + 'already parsed')
                     continue
+                log_file_this.write("start parse type_addr is 0x%x \n" % type_addr)
+                log_file_this.flush()
                 self.parse_type(type_addr=type_addr)
             except:
-                common._debug(sys.exc_info()[0])
+                # common._debug(sys.exc_info()[0])
                 pass
         common._info("types building finished. Total types number: %d" % len(self.parsed_types.keys()))
-        global type_name_str
-        self.types_str_info = type_name_str[:]
-        del type_name_str
-        common._info(f"{len(self.types_str_info)}")
         self.depth = 0
         # print(self.types_str_info)
 
 
     def parse_type(self, type_addr=idc.BADADDR, depth=1):
-        self.depth += 1
-        if type_addr == 0 or type_addr == idc.BADADDR or self.depth > 2:
-            self.depth = 0
-            return None
-
+        common._debug("parse 0x%x types!" % type_addr)
         if type_addr in self.parsed_types.keys():
             common._debug("  "*depth + 'already parsed')
             return self.parsed_types[type_addr].rtype
@@ -308,7 +307,9 @@ class RType():
             if self.type_parser.has_been_parsed(self.ptrtothis_addr):
                 self.ptrtothis = self.type_parser.parsed_types[self.ptrtothis_addr]
             else:
-                self.ptrtothis = self.type_parser.parse_type(type_addr=self.ptrtothis_addr)
+                # cache_parse_types.append(self.ptrtothis_addr)
+                # self.ptrtothis = self.type_parser.parse_type(type_addr=self.ptrtothis_addr)
+                pass
             ida_auto.auto_wait()
 
     def get_kind(self):
@@ -397,12 +398,10 @@ class Name():
         self.len = ((idc.get_wide_byte(self.addr + 1) & 0xFF << 8) | (idc.get_wide_byte(self.addr + 2) & 0xFF)) & 0xFFFF
         idc.create_byte(self.addr + 1)
         idc.create_byte(self.addr + 2)
-        self.orig_name_str = str(idc.get_bytes(self.addr + 3, self.len))
+        self.orig_name_str = idc.get_bytes(self.addr + 3, self.len).decode("iso8859")
         idc.create_strlit(self.addr + 3, self.addr + 3 + self.len)
         self.name_str_addr = self.addr + 3
         self.name_str_len = self.len
-        global type_name_str
-        type_name_str.append((self.name_str_addr, self.name_str_len))
         self.name_str = self.orig_name_str
         # delete star_prefix:
         while True:
@@ -416,11 +415,11 @@ class Name():
                 | (idc.get_wide_byte(self.addr + 3 + self.len + 1) & 0xFF)
             idc.create_byte(self.addr + 3 + self.len)
             idc.create_byte(self.addr + 3 + self.len + 1)
-            self.tag = str(idc.get_bytes(self.addr + 3 + self.len + 2, self.tag_len))
+            self.tag = idc.get_bytes(self.addr + 3 + self.len + 2, self.tag_len).decode("iso8859")
             idc.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len)
             self.tag_addr = self.addr + 3 + self.len + 2
             self.tag_len = self.tag_len
-            type_name_str.append((self.tag_addr, self.tag_len))
+            
 
         # if name was reased, the replace name string with tag string
         if (not self.name_str or len(self.name_str) == 0) and self.tag and self.tag_len > 0:
@@ -431,18 +430,23 @@ class Name():
             pkgpath_off_addr = self.addr + 3 + self.len
             if self.is_followed_by_tag:
                 pkgpath_off_addr += (self.tag_len + 2)
-            pkgpath_off = idc.get_wide_dword(pkgpath_off_addr) & 0xFFFFFFFF
+            pkgpath_off = idc.get_wide_dword(idc.get_wide_dword(pkgpath_off_addr) & 0xFFFFFFFF)
             idc.create_dword(pkgpath_off_addr)
             if pkgpath_off > 0:
                 pkgpath_addr = self.moddata.types_addr + pkgpath_off
+                if pkgpath_addr == self.addr:
+                    return None
                 pkgpath_name_obj = Name(pkgpath_addr, self.moddata)
-                pkgpath_name_obj.parse(False)
-                self.pkg = pkgpath_name_obj.name_str
-                self.pkg_len = len(self.pkg)
+                if pkgpath_name_obj:
+                    pkgpath_name_obj.parse(False)
+                    self.pkg = pkgpath_name_obj.name_str
+                    self.pkg_len = len(self.pkg)
 
-                if self.pkg_len:
-                    idc.set_cmt(pkgpath_off_addr, "pkgpath(@ 0x%x): %s" % (pkgpath_addr, self.pkg), True)
-                    ida_auto.auto_wait()
+                    if self.pkg_len:
+                        idc.set_cmt(pkgpath_off_addr, "pkgpath(@ 0x%x): %s" % (pkgpath_addr, self.pkg), True)
+                        ida_auto.auto_wait()
+                else:
+                    self.is_followed_by_pkgpath = 0
 
         self.full_name = "%s%s%s" % (self.pkg if self.pkg else "", ("_%s" % self.name_str) \
             if self.pkg else self.name_str, ('_%s' % self.tag) if self.tag else "")
@@ -502,6 +506,8 @@ class PtrType():
             self.target_rtype_origname = self.target_rtype.rtype.name_obj.orig_name_str
         else:
             self.target_rtype = self.type_parser.parse_type(type_addr=self.target_type_addr)
+            # cache_parse_types.append(self.target_type_addr)
+            # return
         if not self.target_rtype:
             return
         self.target_rtype_origname = self.target_rtype.name_obj.orig_name_str
@@ -620,6 +626,8 @@ class StructFiled():
             self.rtype = self.type_parser.parsed_types[self.rtype_addr]
         else:
             self.rtype = self.type_parser.parse_type(type_addr=self.rtype_addr)
+            cache_parse_types.append(self.rtype_addr)
+            # self.rtype = None
 
         off_embeded = idc.get_qword(self.addr + 2*ADDR_SZ)
         idc.create_qword(self.addr + 2 * ADDR_SZ)
@@ -668,6 +676,8 @@ class ArrayType():
             self.elem_type = self.type_parser.parsed_types[elem_type_addr]
         else:
             self.elem_type = self.type_parser.parse_type(type_addr=elem_type_addr)
+            # cache_parse_types.append(elem_type_addr)
+            # self.elem_type = None
         if not self.elem_type:
             return
         slice_type_addr = idc.get_qword(self.addr + self.rtype.self_size + ADDR_SZ)
@@ -676,6 +686,8 @@ class ArrayType():
             self.slice_type = self.type_parser.parsed_types[slice_type_addr]
         else:
             self.slice_type = self.type_parser.parse_type(type_addr=slice_type_addr)
+            # cache_parse_types.append(slice_type_addr)
+            # self.slice_type = None
         if not self.slice_type:
             return
         self.len = idc.get_qword(self.addr + self.rtype.self_size + 2 * ADDR_SZ)
@@ -716,8 +728,10 @@ class SliceType():
             self.elem_rtype = self.type_parser.parsed_types[self.elem_type_addr]
         else:
             self.elem_rtype = self.type_parser.parse_type(type_addr=self.elem_type_addr)
+            # cache_parse_types.append(self.elem_type_addr)
+            # self.elem_rtype = None
         if self.elem_rtype:
-            idc.set_cmt(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name)
+            idc.set_cmt(self.addr + self.rtype.self_size, "elem rtype: %s" % self.elem_rtype.name, True)
             idc.set_name(self.addr, "%s_slice" % self.elem_rtype.name, flags=idaapi.SN_FORCE)
             ida_auto.auto_wait()
             common._debug("Slice elem rtype: %s" % self.elem_rtype.name)
@@ -829,13 +843,15 @@ class IMethodType():
                 self.type = self.type_parser.parsed_types[type_addr].rtype
             else:
                 self.type = self.type_parser.parse_type(type_addr=type_addr)
+                # cache_parse_types.append(type_addr)
+                # self.type = None
 
         if name_off > 0 and name_off != idc.BADADDR:
             idc.set_cmt(self.addr, "imethod name(@ 0x%x): %s" % (name_addr, self.name), True)
             ida_auto.auto_wait()
             common._debug("Interface imethod name(@ 0x%x): %s" % (name_addr, self.name))
 
-        if type_off > 0 and type_addr != idc.BADADDR:
+        if type_off > 0 and type_addr != idc.BADADDR and self.type:
             idc.set_cmt(self.addr + 4, "imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str), True)
             ida_auto.auto_wait()
             common._debug("Interface imethod type(@ 0x%x): %s" % (type_addr, self.type.name_obj.name_str))
@@ -877,6 +893,8 @@ class ChanType():
             self.elem_type = self.type_parser.parsed_types[elem_type_addr]
         else:
             self.elem_type = self.type_parser.parse_type(type_addr=elem_type_addr)
+            # cache_parse_types.append(elem_type_addr)
+            # self.elem_type = None
         if not self.elem_type:
             return
         self.elem_type.parse()
@@ -958,6 +976,8 @@ class FuncType():
                 curr_para_type = self.type_parser.parsed_types[para_type_addr]
             else:
                 curr_para_type = self.type_parser.parse_type(type_addr=para_type_addr)
+                # cache_parse_types.append(para_type_addr)
+                # curr_para_type = None
             if not curr_para_type:
                 return
             self.para_types.append(curr_para_type)
@@ -974,6 +994,8 @@ class FuncType():
                 curr_ret_type = self.type_parser.parsed_types[ret_type_addr]
             else:
                 curr_ret_type = self.type_parser.parse_type(type_addr=ret_type_addr)
+                # cache_parse_types.append(ret_type_addr)
+                # curr_ret_type = None
             if not curr_ret_type:
                 return
             self.ret_types.append(curr_ret_type)
@@ -1038,6 +1060,8 @@ class MapType():
             self.key_type = self.type_parser.parsed_types[key_type_addr]
         else:
             self.key_type = self.type_parser.parse_type(type_addr=key_type_addr)
+            #cache_parse_types.append(key_type_addr)
+            #self.key_type = None
         if not self.key_type:
             return
         elem_type_addr = idc.get_qword(map_attr_addr + ADDR_SZ)
@@ -1046,6 +1070,8 @@ class MapType():
             self.elem_type = self.type_parser.parsed_types[elem_type_addr]
         else:
             self.elem_type = self.type_parser.parse_type(type_addr=elem_type_addr)
+            # cache_parse_types.append(elem_type_addr)
+            # self.elem_type = None
         if not self.elem_type:
             return
         buck_type_addr = idc.get_qword(map_attr_addr + 2*ADDR_SZ)
@@ -1054,6 +1080,8 @@ class MapType():
             self.buck_type = self.type_parser.parsed_types[buck_type_addr]
         else:
             self.buck_type = self.type_parser.parse_type(type_addr=buck_type_addr)
+            # cache_parse_types.append(buck_type_addr)
+            # self.buck_type = None
         if not self.buck_type:
             return
         if self.go_subver < 14:
@@ -1232,6 +1260,8 @@ class MethodType():
                 self.mtype = self.type_parser.parsed_types[self.mtype_addr].rtype
             else:
                 self.mtype = self.type_parser.parse_type(type_addr=self.mtype_addr)
+                #cache_parse_types.append(self.mtype_addr)
+                #self.mtype = None
         if not self.mtype:
             return
         self.ifn_off = idc.get_wide_dword(self.addr + 8) & 0xFFFFFFFF

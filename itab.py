@@ -49,7 +49,7 @@ class ItabElem():
                 self.meth_num += 1
 
             curr_addr += common.ADDR_SZ
-        if not self.itype:
+        if not self.itype or not self.rtype:
             return
         idc.set_cmt(self.addr, "interface: %s" % self.itype.name, True)
         idc.set_cmt(self.addr+common.ADDR_SZ, "rtype: %s" % self.rtype.name, True)
@@ -82,8 +82,11 @@ def parse_itab(moddata : ModuleData, type_parser: TypesParser):
     curr_addr = itab_addr
     while curr_addr < itab_end_addr:
         curr_itabelem_addr = idc.get_qword(curr_addr)
-        itab_elem = ItabElem(curr_itabelem_addr, type_parser)
-        itab_elem.parse()
+        try:
+            itab_elem = ItabElem(curr_itabelem_addr, type_parser)
+            itab_elem.parse()
+        except:
+            common._debug("some wrong! itab addr is 0x%x" % curr_addr)
         itab_num += 1
         curr_addr += common.ADDR_SZ
 

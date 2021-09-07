@@ -3,9 +3,13 @@
 import idc, idaapi, idautils
 import string
 
-DEBUG = True
+DEBUG = False
 ADDR_SZ = 8 # Default: 32-bit
 GOVER = ""
+
+if DEBUG:
+    log_file_this_common = open("C:\\Users\\lll\\Desktop\\log2.txt", "w")
+
 
 if idaapi.get_inf_structure().is_64bit():
     ADDR_SZ = 8
@@ -19,7 +23,9 @@ def _error(err_str):
 def _debug(dbg_str):
     global DEBUG
     if DEBUG:
-        print('[DEBUG] - %s' % dbg_str)
+        # print('[DEBUG] - %s' % dbg_str)
+        log_file_this_common.write(dbg_str + "\n")
+        log_file_this_common.flush()
 
 def get_seg(seg_names):
     seg = None
