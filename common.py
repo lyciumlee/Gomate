@@ -3,12 +3,11 @@
 import idc, idaapi, idautils
 import string
 
-DEBUG = False
+DEBUG = True
 ADDR_SZ = 8 # Default: 32-bit
 GOVER = ""
 
-if DEBUG:
-    log_file_this_common = open("C:\\Users\\lll\\Desktop\\log2.txt", "w")
+log_file_this_common = open("C:\\Users\\lll\\Desktop\\log2.txt", "w")
 
 
 if idaapi.get_inf_structure().is_64bit():

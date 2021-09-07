@@ -470,10 +470,10 @@ class Name():
             idc.set_cmt(self.addr, flag_comm_str, True)
             ida_auto.auto_wait()
 
-        ida_bytes.create_strlit(self.addr + 3, self.addr + 3 + self.len, ida_nalt.STRTYPE_C)
+        ida_bytes.create_strlit(self.addr + 3, self.len, ida_nalt.STRTYPE_C)
         ida_auto.auto_wait()
         if self.is_followed_by_tag:
-            ida_bytes.create_strlit(self.addr + 3 + self.len + 2, self.addr + 3 + self.len + 2 + self.tag_len, ida_nalt.STRTYPE_C)
+            ida_bytes.create_strlit(self.addr + 3 + self.len + 2, self.tag_len, ida_nalt.STRTYPE_C)
             idc.set_cmt(self.addr + 3 + self.len + 2, "tag of @ 0x%x" % self.addr, True)
             ida_auto.auto_wait()
 

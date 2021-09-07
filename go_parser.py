@@ -13,7 +13,7 @@ import common
 import idaapi
 import types_builder
 
-DEBUG = False
+DEBUG = True
 if DEBUG:
     import wingdbstub
     wingdbstub.Ensure()
