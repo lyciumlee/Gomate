@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-import idc, idaapi, idautils, ida_bytes, ida_nalt
+import idc, idaapi, idautils, ida_bytes, ida_nalt, ida_ua
 import common
 import sys
 import ida_search
@@ -93,6 +93,41 @@ def is_string_patt(addr):
                     return False
 
     return False
+
+"""
+pattern_001
+mov     rax, [rsp+50h+var_48]
+mov     qword ptr [rax+8], 1Eh
+lea     rcx, unk_1403B7AD6
+mov     [rax], rcx
+"""
+
+def go_116_string_patt001(addr):
+    # check ins one
+    if idc.print_insn_mnem(addr) != 'mov' or idc.get_operand_type(addr, 0) != ida_ua.o_reg or idc.get_operand_type(addr, 1) != ida_ua.o_displ or \
+        idc.print_operand(addr, 0) != 'rax' or "[" not in idc.print_operand(addr, 1):
+        return False
+    ins_2_addr = ida_search.find_code(addr, idaapi.SEARCH_DOWN)
+    ins_3_addr = ida_search.find_code(ins_2_addr, idaapi.SEARCH_DOWN)
+    ins_4_addr = ida_search.find_code(ins_3_addr, idaapi.SEARCH_DOWN)
+    # check ins two
+    if idc.print_insn_mnem(ins_2_addr) != 'mov' or idc.get_operand_type(ins_2_addr, 0) != ida_ua.o_displ or idc.get_operand_type(ins_2_addr, 1) != ida_ua.o_imm or \
+        idc.print_operand(ins_2_addr, 0) != 'qword ptr [rax+8]':
+        return False
+    # check ins three
+    if idc.print_insn_mnem(ins_3_addr) != 'lea' or idc.get_operand_type(ins_3_addr, 0) != ida_ua.o_reg or idc.get_operand_type(ins_3_addr, 1) != ida_ua.o_mem or \
+        idc.print_operand(ins_3_addr, 0) != 'rcx':
+        return False
+    if idc.print_insn_mnem(ins_4_addr) != 'mov' or idc.get_operand_type(ins_4_addr, 0) != ida_ua.o_phrase or idc.get_operand_type(ins_4_addr, 1) != ida_ua.o_reg or \
+        idc.print_operand(ins_4_addr, 0) != '[rax]' or idc.print_operand(ins_4_addr, 1) != 'rcx':
+        return False
+    str_len = idc.get_operand_value(ins_2_addr, 1)
+    str_start_addr = idc.get_operand_value(ins_3_addr, 1)
+    ida_bytes.create_strlit(str_start_addr, str_len, ida_nalt.STRTYPE_C)
+    common._debug("create str at 0x%x" % str_start_addr)
+    return True
+    
+
 
 '''
 Parse string pointer:
@@ -233,7 +268,7 @@ def parse_strings():
                     strings_added += 1
                     addr = ida_search.find_code(addr, idaapi.SEARCH_DOWN)
                 elif is_string_patt(addr):
-                    if 'rodata' not in idc.get_segm_name(addr) and 'text' not in idc.get_segm_name(addr):
+                    if 'rodata' not in idc.get_segm_name(addr) and 'text' not in idc.get_segm_name(addr) and 'rdata' not in idc.get_segm_name(addr):
                         common._debug('Should a string be in the %s section?' % idc.get_segm_name(addr))
                     string_addr = idc.get_operand_value(addr, 1)
                     addr_3 = ida_search.find_code(ida_search.find_code(addr, idaapi.SEARCH_DOWN), idaapi.SEARCH_DOWN)
@@ -250,6 +285,7 @@ def parse_strings():
                     # Skip the extra mov lines since we know it won't be a load on any of them
                     addr = ida_search.find_code(addr_3, idaapi.SEARCH_DOWN)
                 else:
+                    go_116_string_patt001(addr)
                     addr = ida_search.find_code(addr, idaapi.SEARCH_DOWN)
 
     for instr_addr, string_addr, string_len in retry:
