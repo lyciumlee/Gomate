@@ -70,35 +70,41 @@ class Pclntbl():
         self.func_table_addr = self.mod_data.functab
         common._debug(f'func table addr {hex(self.func_table_addr)}')
         for i in range(self.nfunc):
-            func_addr = idc.get_qword(self.func_table_addr + i * ADDR_SZ * 2)
-            func_struct_off = idc.get_qword(self.func_table_addr + i * ADDR_SZ * 2 + ADDR_SZ)
-            func_struct_addr = self.func_table_addr + func_struct_off
-            func_struct = FuncStruct(func_struct_addr)
-            func_struct.parse(self.funcname_addr)
-            common._debug(f"find {hex(func_addr)} name is {func_struct.name}")
-            if not idc.get_func_name(func_addr):
-                common._debug("create function @ %x" % func_addr)
-                ida_bytes.del_items(func_addr, ida_bytes.DELIT_EXPAND)
-                ida_auto.auto_wait()
-                idc.create_insn(func_addr)
-                ida_auto.auto_wait()
-                if ida_funcs.add_func(func_addr):
+            try:
+                func_addr = idc.get_qword(self.func_table_addr + i * ADDR_SZ * 2)
+                func_struct_off = idc.get_qword(self.func_table_addr + i * ADDR_SZ * 2 + ADDR_SZ)
+                func_struct_addr = self.func_table_addr + func_struct_off
+                func_struct = FuncStruct(func_struct_addr)
+                func_struct.parse(self.funcname_addr)
+                common._debug(f"find {hex(func_addr)} name is {func_struct.name}")
+                if not idc.get_func_name(func_addr):
+                    common._debug("create function @ %x" % func_addr)
+                    ida_bytes.del_items(func_addr, ida_bytes.DELIT_EXPAND)
                     ida_auto.auto_wait()
-            idc.set_name(func_addr, func_struct.name.decode("iso8859"), idc.SN_NOWARN)
-            self.func_struct.append(func_struct)
+                    idc.create_insn(func_addr)
+                    ida_auto.auto_wait()
+                    if ida_funcs.add_func(func_addr):
+                        ida_auto.auto_wait()
+                idc.set_name(func_addr, func_struct.name.decode("iso8859"), idc.SN_NOWARN)
+                self.func_struct.append(func_struct)
+            except:
+                continue
         self.parsed_funcs = True
 
     def parse_cutab_and_filetab(self):
         common._debug(f"parse all file path in executables!")
         for i in range(0, self.mod_data.cutab_num, 4):
-            str_addr = idc.get_wide_dword(self.mod_data.cutab + i)
-            if str_addr == 0xFFFFFFFF:
+            try:
+                str_addr = idc.get_wide_dword(self.mod_data.cutab + i)
+                if str_addr == 0xFFFFFFFF:
+                    continue
+                str_addr += self.mod_data.filetab_addr
+                str_addr_len = ida_bytes.get_max_strlit_length(str_addr, ida_nalt.STRTYPE_C)
+                str_of_file = ida_bytes.get_strlit_contents(str_addr, str_addr_len, ida_nalt.STRTYPE_C)
+                common._debug(f"{str_of_file}")
+                self.src_file_path_dic.append((str_addr, str_addr_len, self.mod_data.cutab + i))
+            except:
                 continue
-            str_addr += self.mod_data.filetab_addr
-            str_addr_len = ida_bytes.get_max_strlit_length(str_addr, ida_nalt.STRTYPE_C)
-            str_of_file = ida_bytes.get_strlit_contents(str_addr, str_addr_len, ida_nalt.STRTYPE_C)
-            common._debug(f"{str_of_file}")
-            self.src_file_path_dic.append((str_addr, str_addr_len, self.mod_data.cutab + i))
         self.parsed_source_file_path = True
 
     def parse(self):
